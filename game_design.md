@@ -41,6 +41,10 @@ Classic Snake, refined for a competitive arena feel: you and AI snakes race to e
   4) Apply collisions with walls and any bodies; remove casualties.
   5) Refill food up to target count.
 
+- No-move and termination:
+  - If an AI has no safe move, it still commits a direction (least-bad or straight) and may die during collision resolution; the engine never stalls.
+  - Only player death ends the run. AI deaths do not end the run; the game continues.
+
 ## Entities
 - Player snake: Blocky segments; head uses a distinct color.
 - AI snakes: Same physics and growth; can die from collisions.
