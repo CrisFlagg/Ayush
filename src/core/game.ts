@@ -72,11 +72,12 @@ export class Game {
     player.nextDir = dir;
   }
 
-  updateAIIntents() {
+  updateAIIntents(willMove: boolean[]) {
     for (let i = 0; i < this.state.snakes.length; i++) {
       if (i === this.state.playerIndex) continue;
       const sn = this.state.snakes[i];
       if (!sn.alive) continue;
+      if (!willMove[i]) continue; // plan on movement ticks
       const dir = this.ai.plan(this.state, sn);
       if (dir !== null && !isReverse(sn.dir, dir)) {
         sn.nextDir = dir;
@@ -97,21 +98,35 @@ export class Game {
     // Only process one tick at a time to keep pace stable
     this.accumulator -= stepMs;
 
-    // Update AI intents before committing inputs
-    this.updateAIIntents();
-
-    // 1) Input commit
-    for (const sn of this.state.snakes) {
+    // Determine which snakes move this tick using per-snake speed
+    const willMove: boolean[] = new Array(this.state.snakes.length).fill(false);
+    for (let i = 0; i < this.state.snakes.length; i++) {
+      const sn = this.state.snakes[i];
       if (!sn.alive) continue;
+      sn.moveAccum += sn.speed;
+      if (sn.moveAccum >= 1) {
+        willMove[i] = true;
+        sn.moveAccum -= 1;
+      }
+    }
+
+    // Update AI intents before committing inputs, only for snakes that will move
+    this.updateAIIntents(willMove);
+
+    // 1) Input commit (only apply when the snake will move)
+    for (let i = 0; i < this.state.snakes.length; i++) {
+      const sn = this.state.snakes[i];
+      if (!sn.alive) continue;
+      if (!willMove[i]) continue;
       if (sn.nextDir !== null && !isReverse(sn.dir, sn.nextDir)) {
         sn.dir = sn.nextDir;
       }
       sn.nextDir = null;
     }
 
-    // 2) Next head cells
-    const nextHeads: (Cell | null)[] = this.state.snakes.map((sn) =>
-      sn.alive ? add(sn.body[0], DIR_VECS[sn.dir]) : null
+    // 2) Next head cells (only for snakes that will move)
+    const nextHeads: (Cell | null)[] = this.state.snakes.map((sn, i) =>
+      sn.alive && willMove[i] ? add(sn.body[0], DIR_VECS[sn.dir]) : null
     );
 
     // 3) Head-to-head resolution
@@ -155,7 +170,8 @@ export class Game {
     for (let i = 0; i < this.state.snakes.length; i++) {
       const sn = this.state.snakes[i];
       if (!sn.alive || dead.has(i)) continue;
-      const target = nextHeads[i]!;
+      const target = nextHeads[i];
+      if (!target) continue; // snake did not move this tick
       // Eat?
       const foodIndex = this.state.foods.findIndex((f) => cellEquals(f, target));
       if (foodIndex !== -1) {

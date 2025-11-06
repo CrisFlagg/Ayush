@@ -331,7 +331,7 @@
     }
   }
 
-  function makeSnake(id, head, dir, color, length = 3) {
+  function makeSnake(id, head, dir, color, length = 3, speed = 1) {
     const body = [head];
     for (let i = 1; i < length; i++) {
       if (dir === Direction.Right) body.push({ x: head.x - i, y: head.y });
@@ -339,13 +339,27 @@
       else if (dir === Direction.Down) body.push({ x: head.x, y: head.y - i });
       else if (dir === Direction.Up) body.push({ x: head.x, y: head.y + i });
     }
-    return { id, color, body, dir, nextDir: null, alive: true, grewThisTick: false };
+    return {
+      id,
+      color,
+      body,
+      dir,
+      nextDir: null,
+      alive: true,
+      grewThisTick: false,
+      speed,
+      moveAccum: 0
+    };
   }
+
   function spawnPlayerAndAIs(state) {
     const { gridWidth: w, gridHeight: h, aiCount } = state.config;
     const playerHead = { x: Math.floor(w / 4), y: Math.floor(h / 2) };
-    state.snakes.push(makeSnake(0, playerHead, Direction.Right, { head: "#3cff3c", body: "#2bbf2b" }, 3));
+    state.snakes.push(
+      makeSnake(0, playerHead, Direction.Right, { head: "#3cff3c", body: "#2bbf2b" }, 3, 0.9)
+    );
     state.playerIndex = 0;
+
     const aiColors = [
       { head: "#ff3c3c", body: "#bf2b2b" },
       { head: "#3cc0ff", body: "#2b8fbf" },
@@ -356,13 +370,15 @@
       { x: Math.floor((3 * w) / 4), y: Math.floor((2 * h) / 3) },
       { x: Math.floor(w / 2), y: Math.floor(h / 4) },
     ];
+
     for (let i = 0; i < aiCount; i++) {
       const pos = positions[i % positions.length];
       const dir = i % 2 === 0 ? Direction.Left : Direction.Up;
       const id = i + 1;
-      state.snakes.push(makeSnake(id, pos, dir, aiColors[i % aiColors.length], 3));
+      state.snakes.push(makeSnake(id, pos, dir, aiColors[i % aiColors.length], 3, 0.8));
     }
   }
+
   function refillFood(state) {
     const target = state.config.targetFoodCount;
     while (state.foods.length < target) {
@@ -418,10 +434,11 @@
       const player = this.state.snakes[this.state.playerIndex];
       if (!player.alive) return; if (isReverse(player.dir, dir)) return; player.nextDir = dir;
     }
-    updateAIIntents() {
+    updateAIIntents(willMove) {
       for (let i = 0; i < this.state.snakes.length; i++) {
         if (i === this.state.playerIndex) continue;
         const sn = this.state.snakes[i]; if (!sn.alive) continue;
+        if (!willMove[i]) continue;
         const dir = this.ai.plan(this.state, sn);
         if (dir !== null && !isReverse(sn.dir, dir)) sn.nextDir = dir;
       }
@@ -431,13 +448,31 @@
       const tickHz = this.tunedTickHz(), stepMs = 1000 / tickHz;
       this.accumulator += dtMs; if (this.accumulator < stepMs) return; this.accumulator -= stepMs;
 
-      this.updateAIIntents();
-      for (const sn of this.state.snakes) {
+      // Determine which snakes move this tick based on per-snake speed
+      const willMove = new Array(this.state.snakes.length).fill(false);
+      for (let i = 0; i < this.state.snakes.length; i++) {
+        const sn = this.state.snakes[i];
         if (!sn.alive) continue;
+        sn.moveAccum += sn.speed;
+        if (sn.moveAccum >= 1) {
+          willMove[i] = true;
+          sn.moveAccum -= 1;
+        }
+      }
+
+      // Plan AI only for snakes that are moving this tick
+      this.updateAIIntents(willMove);
+
+      // Apply input for snakes that will move
+      for (let i = 0; i < this.state.snakes.length; i++) {
+        const sn = this.state.snakes[i];
+        if (!sn.alive) continue;
+        if (!willMove[i]) continue;
         if (sn.nextDir !== null && !isReverse(sn.dir, sn.nextDir)) sn.dir = sn.nextDir;
         sn.nextDir = null;
       }
-      const nextHeads = this.state.snakes.map(sn => sn.alive ? addCell(sn.body[0], DIR_VECS[sn.dir]) : null);
+
+      const nextHeads = this.state.snakes.map((sn, i) => (sn.alive && willMove[i]) ? addCell(sn.body[0], DIR_VECS[sn.dir]) : null);
       const conflicts = new Map();
       for (let i = 0; i < nextHeads.length; i++) {
         const n = nextHeads[i]; if (!n) continue;
@@ -458,6 +493,7 @@
       for (let i = 0; i < this.state.snakes.length; i++) {
         const sn = this.state.snakes[i]; if (!sn.alive || dead.has(i)) continue;
         const target = nextHeads[i];
+        if (!target) continue;
         const foodIndex = this.state.foods.findIndex((f) => cellEquals(f, target));
         if (foodIndex !== -1) { this.state.foods.splice(foodIndex, 1); this.state.score += 10; sn.grewThisTick = true; playSound("eat"); }
         else sn.grewThisTick = false;

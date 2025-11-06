@@ -1,7 +1,14 @@
 import { Cell, Direction, GameState, Snake } from "./types";
 import { randomEmptyCell } from "./grid";
 
-function makeSnake(id: number, head: Cell, dir: Direction, color: { head: string, body: string }, length = 3): Snake {
+function makeSnake(
+  id: number,
+  head: Cell,
+  dir: Direction,
+  color: { head: string; body: string },
+  length = 3,
+  speed = 1
+): Snake {
   const body: Cell[] = [head];
   for (let i = 1; i < length; i++) {
     if (dir === Direction.Right) body.push({ x: head.x - i, y: head.y });
@@ -16,7 +23,9 @@ function makeSnake(id: number, head: Cell, dir: Direction, color: { head: string
     dir,
     nextDir: null,
     alive: true,
-    grewThisTick: false
+    grewThisTick: false,
+    speed,
+    moveAccum: 0
   };
 }
 
@@ -25,7 +34,7 @@ export function spawnPlayerAndAIs(state: GameState) {
   // Player near center-left, heading right
   const playerHead = { x: Math.floor(w / 4), y: Math.floor(h / 2) };
   state.snakes.push(
-    makeSnake(0, playerHead, Direction.Right, { head: "#3cff3c", body: "#2bbf2b" }, 3)
+    makeSnake(0, playerHead, Direction.Right, { head: "#3cff3c", body: "#2bbf2b" }, 3, 0.9)
   );
   state.playerIndex = 0;
 
@@ -47,7 +56,7 @@ export function spawnPlayerAndAIs(state: GameState) {
     const pos = positions[i % positions.length];
     const dir = i % 2 === 0 ? Direction.Left : Direction.Up;
     const id = i + 1;
-    state.snakes.push(makeSnake(id, pos, dir, aiColors[i % aiColors.length], 3));
+    state.snakes.push(makeSnake(id, pos, dir, aiColors[i % aiColors.length], 3, 0.8));
   }
 }
 

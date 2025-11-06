@@ -29,6 +29,9 @@ export type Snake = {
   nextDir: Direction | null;
   alive: boolean;
   grewThisTick: boolean;
+  // Movement pacing: accumulator adds `speed` each sim tick; when >= 1, snake moves and subtracts 1.
+  speed: number;      // 1 = baseline; 0.8 = 20% slower; 0.9 = 10% slower
+  moveAccum: number;  // [0, 1)
 };
 
 export type GameConfig = {
