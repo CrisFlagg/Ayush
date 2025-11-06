@@ -252,6 +252,29 @@
     ctx.fillStyle = snake.color.head;
     ctx.fillRect((head.x + border) * s, (head.y + border) * s, s, s);
   }
+
+  function drawGrid(ctx, state, info) {
+    const s = info.cellPx;
+    const border = 1;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    for (let gx = 1; gx < state.config.gridWidth; gx++) {
+      const x = (border * s) + gx * s + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, border * s);
+      ctx.lineTo(x, (border + state.config.gridHeight) * s);
+      ctx.stroke();
+    }
+    for (let gy = 1; gy < state.config.gridHeight; gy++) {
+      const y = (border * s) + gy * s + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(border * s, y);
+      ctx.lineTo((border + state.config.gridWidth) * s, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
   function drawGame(ctx, state, info) {
     ctx.fillStyle = "#87CEEB";
     ctx.fillRect(0, 0, info.totalWidth, info.totalHeight);
@@ -259,8 +282,9 @@
     const s = info.cellPx;
     const border = 1;
     ctx.fillStyle = "#bfe8ff";
-    ctx.fillRect(border * s, border * s, state.config.gridWidth * s, state.config.gridHeight * s);
-    drawFood(ctx, state, info);
+  ctx.fillRect(border * s, border * s, state.config.gridWidth * s, state.config.gridHeight * s);
+  drawGrid(ctx, state, info);
+  drawFood(ctx, state, info);
     for (const sn of state.snakes) { if (!sn.alive) continue; drawSnake(ctx, sn, info); }
   }
 
@@ -384,7 +408,7 @@
         snakes: [], playerIndex: 0, foods: [], rng: rngFromSeed(seed),
         time: { ticks: 0, elapsedMs: 0 }, seed, score: 0, bestScore: 0, running: true, over: false, paused: false
       };
-      this.ai = new AIController(2);
+      this.ai = new AIController(1);
       this.accumulator = 0;
       spawnPlayerAndAIs(this.state); refillFood(this.state);
     }

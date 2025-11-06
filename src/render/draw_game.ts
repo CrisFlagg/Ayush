@@ -79,6 +79,28 @@ export function drawGame(ctx: CanvasRenderingContext2D, state: GameState, info: 
   ctx.fillStyle = "#bfe8ff";
   ctx.fillRect(border * s, border * s, state.config.gridWidth * s, state.config.gridHeight * s);
 
+  // Light grid
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.lineWidth = 1;
+  // Vertical lines
+  for (let gx = 1; gx < state.config.gridWidth; gx++) {
+    const x = (border * s) + gx * s + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, border * s);
+    ctx.lineTo(x, (border + state.config.gridHeight) * s);
+    ctx.stroke();
+  }
+  // Horizontal lines
+  for (let gy = 1; gy < state.config.gridHeight; gy++) {
+    const y = (border * s) + gy * s + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(border * s, y);
+    ctx.lineTo((border + state.config.gridWidth) * s, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
   // Foods
   drawFood(ctx, state, info);
 

@@ -51,7 +51,7 @@ export class Game {
     spawnPlayerAndAIs(this.state);
     refillFood(this.state);
 
-    this.ai = new AIController(2);
+    this.ai = new AIController(1);
   }
 
   setBestScore(best: number) {
