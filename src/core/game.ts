@@ -143,7 +143,7 @@ export class Game {
     const dead = new Set<number>();
     for (const [key, arr] of conflicts.entries()) {
       if (arr.length <= 1) continue;
-      // Longest survives; ties -> all die
+      // Longest survives; ties -> both die
       let maxLen = -1;
       let winners: number[] = [];
       for (const idx of arr) {
@@ -162,6 +162,25 @@ export class Game {
         // Kill losers
         const winner = winners[0];
         for (const idx of arr) if (idx !== winner) dead.add(idx);
+      }
+    }
+
+    // Tail-collision rule: hitting another snake's tail is fatal (even if that tail would vacate)
+    const tails: (Cell | null)[] = this.state.snakes.map((sn) =>
+      sn.alive ? sn.body[sn.body.length - 1] : null
+    );
+    for (let i = 0; i < nextHeads.length; i++) {
+      const target = nextHeads[i];
+      if (!target) continue;
+      if (dead.has(i)) continue;
+      for (let j = 0; j < this.state.snakes.length; j++) {
+        if (j === i) continue;
+        const t = tails[j];
+        if (!t) continue;
+        if (cellEquals(t, target)) {
+          dead.add(i);
+          break;
+        }
       }
     }
 

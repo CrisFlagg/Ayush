@@ -490,6 +490,21 @@
         if (winners.length > 1) { for (const idx of arr) dead.add(idx); }
         else { const winner = winners[0]; for (const idx of arr) if (idx !== winner) dead.add(idx); }
       }
+
+      // Tail-collision rule: hitting another snake's tail is fatal (even if that tail would vacate)
+      const tails = this.state.snakes.map((sn) => sn.alive ? sn.body[sn.body.length - 1] : null);
+      for (let i = 0; i < this.state.snakes.length; i++) {
+        const target = nextHeads[i];
+        if (!target) continue;
+        if (dead.has(i)) continue;
+        for (let j = 0; j < this.state.snakes.length; j++) {
+          if (j === i) continue;
+          const t = tails[j];
+          if (!t) continue;
+          if (cellEquals(t, target)) { dead.add(i); break; }
+        }
+      }
+
       for (let i = 0; i < this.state.snakes.length; i++) {
         const sn = this.state.snakes[i]; if (!sn.alive || dead.has(i)) continue;
         const target = nextHeads[i];
