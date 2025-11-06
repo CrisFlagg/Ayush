@@ -1,6 +1,6 @@
 import { AIController } from "../ai/controller";
 import { playSound } from "../audio/sfx";
-import { refillFood, spawnPlayerAndAIs } from "./spawn";
+import { refillFood, spawnPlayerAndAIs, respawnSnake } from "./spawn";
 import {
   Cell,
   Direction,
@@ -244,16 +244,33 @@ export class Game {
     for (const idx of dead) {
       const sn = this.state.snakes[idx];
       sn.alive = false;
+      // Schedule AI respawn after a short delay; player death ends the game
+      if (idx !== this.state.playerIndex) {
+        sn.respawnAtTick = this.state.time.ticks + 20; // ~1.1-1.6s depending on tickHz
+      }
       playSound("death");
     }
 
-    // Remove dead snakes from occupancy - not strictly necessary
     // 6) Refill food
     refillFood(this.state);
 
     // Time
     this.state.time.ticks++;
     this.state.time.elapsedMs += stepMs;
+
+    // 7) Process respawns (AIs only)
+    for (let i = 0; i < this.state.snakes.length; i++) {
+      if (i === this.state.playerIndex) continue;
+      const sn = this.state.snakes[i];
+      if (sn.alive) continue;
+      if (sn.respawnAtTick != null && this.state.time.ticks >= sn.respawnAtTick) {
+        // Try to respawn; if failed, push it a bit later
+        const ok = respawnSnake(this.state, sn, 3);
+        if (!ok) {
+          sn.respawnAtTick = this.state.time.ticks + 10;
+        }
+      }
+    }
 
     // Check player status
     const player = this.state.snakes[this.state.playerIndex];

@@ -348,7 +348,8 @@
       alive: true,
       grewThisTick: false,
       speed,
-      moveAccum: 0
+      moveAccum: 0,
+      respawnAtTick: null
     };
   }
 
@@ -377,6 +378,46 @@
       const id = i + 1;
       state.snakes.push(makeSnake(id, pos, dir, aiColors[i % aiColors.length], 3, 0.8));
     }
+  }
+
+  function tryPlaceSnakeAt(state, head, dir, length = 3) {
+    const w = state.config.gridWidth, h = state.config.gridHeight;
+    const body = [head];
+    for (let i = 1; i < length; i++) {
+      if (dir === Direction.Right) body.push({ x: head.x - i, y: head.y });
+      else if (dir === Direction.Left) body.push({ x: head.x + i, y: head.y });
+      else if (dir === Direction.Down) body.push({ x: head.x, y: head.y - i });
+      else if (dir === Direction.Up) body.push({ x: head.x, y: head.y + i });
+    }
+    for (const c of body) {
+      if (!inBounds(c, w, h)) return null;
+      if (isOccupied(state.snakes, c)) return null;
+      if (cellInFoods(state, c)) return null;
+    }
+    return body;
+  }
+
+  function respawnSnake(state, sn, length = 3) {
+    const dirs = [Direction.Up, Direction.Right, Direction.Down, Direction.Left];
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const head = randomEmptyCell(state);
+      const startIdx = Math.floor(state.rng() * dirs.length);
+      for (let k = 0; k < dirs.length; k++) {
+        const dir = dirs[(startIdx + k) % dirs.length];
+        const body = tryPlaceSnakeAt(state, head, dir, length);
+        if (body) {
+          sn.body = body;
+          sn.dir = dir;
+          sn.nextDir = null;
+          sn.alive = true;
+          sn.grewThisTick = false;
+          sn.moveAccum = 0;
+          sn.respawnAtTick = null;
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   function refillFood(state) {
@@ -525,9 +566,28 @@
         if (!inBounds(head, this.state.config.gridWidth, this.state.config.gridHeight)) { dead.add(i); continue; }
         const key = cellKey(head); occupied.delete(key); if (occupied.has(key)) dead.add(i); occupied.add(key);
       }
-      for (const idx of dead) { const sn = this.state.snakes[idx]; sn.alive = false; playSound("death"); }
+      for (const idx of dead) {
+        const sn = this.state.snakes[idx];
+        sn.alive = false;
+        if (idx !== this.state.playerIndex) {
+          sn.respawnAtTick = this.state.time.ticks + 20;
+        }
+        playSound("death");
+      }
       refillFood(this.state);
       this.state.time.ticks++; this.state.time.elapsedMs += stepMs;
+
+      // Process AI respawns
+      for (let i = 0; i < this.state.snakes.length; i++) {
+        if (i === this.state.playerIndex) continue;
+        const sn = this.state.snakes[i];
+        if (sn.alive) continue;
+        if (sn.respawnAtTick != null && this.state.time.ticks >= sn.respawnAtTick) {
+          const ok = respawnSnake(this.state, sn, 3);
+          if (!ok) sn.respawnAtTick = this.state.time.ticks + 10;
+        }
+      }
+
       const player = this.state.snakes[this.state.playerIndex];
       if (!player.alive) { this.state.over = true; this.state.running = false; }
     }
