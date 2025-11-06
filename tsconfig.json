@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@core/*": ["src/core/*"],
+      "@input/*": ["src/input/*"],
+      "@ai/*": ["src/ai/*"],
+      "@render/*": ["src/render/*"],
+      "@scenes/*": ["src/scenes/*"],
+      "@persist/*": ["src/persist/*"],
+      "@audio/*": ["src/audio/*"]
+    }
+  },
+  "include": ["src"]
+}

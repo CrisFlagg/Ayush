@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>Snake Arena (8-bit)</title>
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        background: #87CEEB; /* sky-blue backdrop */
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+      #app {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        background: #87CEEB;
+      }
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+      }
+      .panel {
+        pointer-events: auto;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 16px 20px;
+        border: 3px solid #fff;
+        border-radius: 8px;
+        min-width: 280px;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+      }
+      .title {
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: 1px;
+        text-align: center;
+        margin-bottom: 12px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 8px 0;
+      }
+      .row label {
+        font-weight: 600;
+      }
+      .row select, .row button {
+        font-size: 14px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 2px solid #fff;
+        background: #1d1d1d;
+        color: #fff;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 12px;
+      }
+      .hud {
+        position: absolute;
+        top: env(safe-area-inset-top, 10px);
+        left: env(safe-area-inset-left, 10px);
+        right: env(safe-area-inset-right, 10px);
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        color: #000;
+        font-weight: 700;
+        text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+        padding: 6px 8px;
+        user-select: none;
+      }
+      .hud .right {
+        text-align: right;
+      }
+      .btn {
+        cursor: pointer;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+      <div class="hud" id="hud">
+        <div class="left">
+          <div id="hud-score">Score: 0</div>
+          <div id="hud-length">Length: 3</div>
+        </div>
+        <div class="right">
+          <div id="hud-time">Time: 0.0s</div>
+          <div id="hud-best">Best: 0</div>
+        </div>
+      </div>
+
+      <div class="overlay" id="title-overlay">
+        <div class="panel">
+          <div class="title">Snake Arena (8-bit)</div>
+          <div class="row">
+            <label for="grid-size">Grid</label>
+            <select id="grid-size">
+              <option value="S">Small (24x24)</option>
+              <option value="M" selected>Medium (32x32)</option>
+              <option value="L">Large (40x40)</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="ai-count">AI</label>
+            <select id="ai-count">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button id="play-btn" class="btn">Play</button>
+          </div>
+          <div style="margin-top:8px; font-size:12px; opacity:0.8; text-align:center;">
+            Controls: Arrow keys / WASD, Esc to pause. Swipe on touch.
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay hidden" id="pause-overlay">
+        <div class="panel">
+          <div class="title">Paused</div>
+          <div class="actions">
+            <button id="resume-btn" class="btn">Resume</button>
+            <button id="restart-btn" class="btn">Restart</button>
+            <button id="to-title-btn" class="btn">Title</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay hidden" id="results-overlay">
+        <div class="panel">
+          <div class="title">Results</div>
+          <div id="results-text" style="text-align:center; margin: 8px 0 12px;"></div>
+          <div class="actions">
+            <button id="restart2-btn" class="btn">Restart</button>
+            <button id="title2-btn" class="btn">Title</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
